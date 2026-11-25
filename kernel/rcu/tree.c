@@ -2492,6 +2492,12 @@ static void rcu_do_batch(struct rcu_data *rdp)
 		trace_rcu_invoke_callback(rcu_state.name, rhp);
 
 		f = rhp->func;
+		/* TEMP DEBUG: catch a callback that has already been invoked once */
+		if (unlikely(!f)) {
+			pr_crit("RCU: re-invoked callback, rhp=%px\n", rhp);
+			mem_dump_obj(rhp);
+			dump_stack();
+		}
 		WRITE_ONCE(rhp->func, (rcu_callback_t)0L);
 		f(rhp);
 
