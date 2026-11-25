@@ -262,11 +262,11 @@ static struct page *binder_page_lookup(struct binder_alloc *alloc,
 	 * Find an existing page in the remote mm. If missing,
 	 * don't attempt to fault-in just propagate an error.
 	 */
-	down_read(&mm->mmap_sem);
+	mmap_read_lock(mm);
 	if (binder_alloc_is_mapped(alloc))
 		npages = get_user_pages_remote(current, mm, addr, 1, 0,
 					       &page, NULL, NULL);
-	up_read(&mm->mmap_sem);
+	mmap_read_unlock(mm);
 
 	return npages > 0 ? page : NULL;
 }
@@ -279,13 +279,11 @@ static int binder_page_insert(struct binder_alloc *alloc,
 	struct vm_area_struct *vma;
 	int ret = -ESRCH;
 
-	down_read(&mm->mmap_sem);
-	vma = find_vma(mm, addr);
-	if (vma && vma->vm_start > addr)
-		vma = NULL;
+	mmap_read_lock(mm);
+	vma = vma_lookup(mm, addr);
 	if (vma && binder_alloc_is_mapped(alloc))
 		ret = vm_insert_page(vma, addr, page);
-	up_read(&mm->mmap_sem);
+	mmap_read_unlock(mm);
 
 	return ret;
 }
@@ -854,12 +852,7 @@ static void binder_alloc_clear_buf(struct binder_alloc *alloc,
 		page = binder_alloc_get_page(alloc, buffer,
 					     buffer_offset, &pgoff);
 		size = min_t(size_t, bytes, PAGE_SIZE - pgoff);
-		{
-			void *kaddr = kmap(page);
-
-			memset(kaddr + pgoff, 0, size);
-			kunmap(page);
-		}
+		memset_page(page, pgoff, 0, size);
 		bytes -= size;
 		buffer_offset += size;
 	}
@@ -1169,9 +1162,7 @@ enum lru_status binder_alloc_free_page(struct list_head *item,
 	index = mdata->page_index;
 	page_addr = alloc->vm_start + index * PAGE_SIZE;
 
-	vma = find_vma(mm, page_addr);
-	if (vma && vma->vm_start > page_addr)
-		vma = NULL;
+	vma = vma_lookup(mm, page_addr);
 	/*
 	 * Since a binder_alloc can only be mapped once, we ensure
 	 * the vma corresponds to this mapping by checking whether
@@ -1209,7 +1200,7 @@ enum lru_status binder_alloc_free_page(struct list_head *item,
 err_invalid_vma:
 	mutex_unlock(&alloc->mutex);
 err_get_alloc_mutex_failed:
-	up_read(&mm->mmap_sem);
+	mmap_read_unlock(mm);
 err_down_read_mmap_sem_failed:
 	mmput_async(mm);
 err_mmget:
@@ -1333,9 +1324,9 @@ binder_alloc_copy_user_to_buffer(struct binder_alloc *alloc,
 		page = binder_alloc_get_page(alloc, buffer,
 					     buffer_offset, &pgoff);
 		size = min_t(size_t, bytes, PAGE_SIZE - pgoff);
-		kptr = kmap(page) + pgoff;
+		kptr = kmap_local_page(page) + pgoff;
 		ret = copy_from_user(kptr, from, size);
-		kunmap(page);
+		kunmap_local(kptr);
 		if (ret)
 			return bytes - size + ret;
 		bytes -= size;
