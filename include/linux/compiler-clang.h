@@ -5,11 +5,6 @@
 
 /* Compiler specific definitions for Clang compiler */
 
-/* Version check helper used by e.g. kallsyms when stripping LTO suffixes. */
-#define CONFIG_CLANG_VERSION (__clang_major__ * 10000 +	\
-			      __clang_minor__ * 100 +	\
-			      __clang_patchlevel__)
-
 #define uninitialized_var(x) x = *(&(x))
 
 /* same as gcc, this was present in clang-2.6 so we can assume it works
