@@ -138,14 +138,14 @@ jobs:
             EXTRA="-oplus"
           fi
           sed -i -e "s/CONFIG_LOCALVERSION=\"-FakeDreamer\"/CONFIG_LOCALVERSION=\"${{ github.event.inputs.CUSTOM_SED }}${EXTRA}\"/" arch/arm64/configs/vendor/apollo_defconfig
-- name: Swap to KernelSU Next (Legacy)
-  run: |
-    git submodule deinit -f KernelSU || true
-    git rm -f KernelSU || true
-    rm -rf .git/modules/KernelSU drivers/kernelsu
-    curl -LSs "https://githubusercontent.com" | bash -s legacy
+      - name: Swap to KernelSU Next (Legacy)
+        run: |
+          git submodule deinit -f KernelSU || true
+          git rm -f KernelSU || true
+          rm -rf .git/modules/KernelSU drivers/kernelsu
+          curl -LSs "https://githubusercontent.com" | bash -s legacy
     
-- name: Remove cycle count
+      - name: Remove cycle count
         if: ${{ github.event.inputs.REMOVE_CYCLE_COUNT == 'yes' }}
         run: |
           cd kernel_tree
