@@ -1,7 +1,7 @@
-- name: Swap to KernelSU Next (Legacy)
-  run: |
-    git submodule deinit -f KernelSU || true
-    git rm -f KernelSU || true
-    rm -rf .git/modules/KernelSU drivers/kernelsu
-    curl -LSs "https://githubusercontent.com" | bash -s legacy
-    
+      - name: Swap to KernelSU Next (Legacy)
+        run: |
+          git config --remove-section submodule.KernelSU 2>/dev/null || true
+          git rm --cached -f KernelSU 2>/dev/null || true
+          rm -rf KernelSU KernelSU-Next drivers/kernelsu .git/modules/KernelSU
+          sed -i '/kernelsu/d' drivers/Makefile drivers/Kconfig
+          curl -LSs "https://githubusercontent.com" | bash -s legacy
