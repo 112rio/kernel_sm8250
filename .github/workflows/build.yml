@@ -1,0 +1,7 @@
+- name: Swap to KernelSU Next (Legacy)
+  run: |
+    git submodule deinit -f KernelSU || true
+    git rm -f KernelSU || true
+    rm -rf .git/modules/KernelSU drivers/kernelsu
+    curl -LSs "https://githubusercontent.com" | bash -s legacy
+    
